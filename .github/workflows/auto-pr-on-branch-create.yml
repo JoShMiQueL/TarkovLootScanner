@@ -1,0 +1,58 @@
+name: Auto PR on new branch
+
+on:
+  create:
+
+jobs:
+  open-pr:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create pull request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const refType = context.payload.ref_type;
+            if (refType !== 'branch') {
+              core.info(`Not a branch creation (type=${refType}), skipping.`);
+              return;
+            }
+
+            const branch = context.payload.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const { data: repoData } = await github.rest.repos.get({ owner, repo });
+            const base = repoData.default_branch;
+
+            if (branch === base) {
+              core.info(`Branch '${branch}' is the default branch; skipping PR.`);
+              return;
+            }
+
+            const { data: existing } = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branch}`,
+              state: 'open',
+            });
+
+            if (existing.length > 0) {
+              core.info(`Open PR already exists for branch '${branch}', skipping.`);
+              return;
+            }
+
+            const title = '@coderabbitai';
+            const body = `Auto-created pull request for branch \`${branch}\`.`;
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner,
+              repo,
+              head: branch,
+              base,
+              title,
+              body,
+            });
+
+            core.info(`Created PR #${pr.number} from '${branch}' into '${base}'.`)
