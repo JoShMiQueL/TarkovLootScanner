@@ -13,40 +13,53 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const branch = context.payload.ref;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            let step = 'initialize';
+            try {
+              step = 'read ref';
+              const refType = context.payload.ref_type;
+              const branch = context.payload.ref;
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
 
-            const { data: repoData } = await github.rest.repos.get({ owner, repo });
-            const base = repoData.default_branch;
+              step = 'repos.get default branch';
+              const { data: repoData } = await github.rest.repos.get({ owner, repo });
+              const base = repoData.default_branch;
 
-            if (branch === base) {
-              core.info(`Branch '${branch}' is the default branch; skipping PR.`);
+              if (branch === base) {
+                core.info(`Branch '${branch}' is the default branch; skipping PR.`);
+                return;
+              }
+
+              step = 'pulls.list existing PRs';
+              const { data: existing } = await github.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${branch}`,
+                state: 'open',
+              });
+
+              if (existing.length > 0) {
+                core.info(`Open PR already exists for branch '${branch}', skipping.`);
+                return;
+              }
+
+              step = 'pulls.create PR';
+              const title = '@coderabbitai';
+              const body = `Auto-created pull request for branch \`${branch}\`.`;
+
+              const { data: pr } = await github.rest.pulls.create({
+                owner,
+                repo,
+                head: `${owner}:${branch}`,
+                base,
+                title,
+                body,
+              });
+
+              core.info(`Created PR #${pr.number} from '${branch}' into '${base}'.`);
+            } catch (error) {
+              core.error(error);
+              const statusInfo = error?.status ? ` (status ${error.status})` : '';
+              core.setFailed(`Failed during ${step}: ${error.message}${statusInfo}`);
               return;
             }
-
-            const { data: existing } = await github.rest.pulls.list({
-              owner,
-              repo,
-              head: `${owner}:${branch}`,
-              state: 'open',
-            });
-
-            if (existing.length > 0) {
-              core.info(`Open PR already exists for branch '${branch}', skipping.`);
-              return;
-            }
-
-            const title = '@coderabbitai';
-            const body = `Auto-created pull request for branch \`${branch}\`.`;
-
-            const { data: pr } = await github.rest.pulls.create({
-              owner,
-              repo,
-              head: branch,
-              base,
-              title,
-              body,
-            });
-
-            core.info(`Created PR #${pr.number} from '${branch}' into '${base}'.`)
