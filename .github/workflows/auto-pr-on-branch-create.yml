@@ -13,12 +13,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const refType = context.payload.ref_type;
-            if (refType !== 'branch') {
-              core.info(`Not a branch creation (type=${refType}), skipping.`);
-              return;
-            }
-
             const branch = context.payload.ref;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
