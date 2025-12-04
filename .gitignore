@@ -1,0 +1,48 @@
+# Visual Studio / .NET
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+[Ll]og/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+[xX]64/
+[xX]86/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Publish / artifacts
+publish/
+artifacts/
+
+# OS-specific
+[Dd]esktop.ini
+[Tt]humbs.db
+*.DS_Store
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# Logs
+*.log
+
+# Coverage / analysis
+coverage*/
+TestResults/
+*.coverage
+*.coveragexml
