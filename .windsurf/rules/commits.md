@@ -43,7 +43,7 @@ Then:
 
 ### Special emoji for releases / versions
 
-Use **🔖 only for release / version related work**:
+Use **🔖 only for release/version-related work**:
 
 - Version bumps:
   - `🔖 chore(release): bump version to 0.1.1`

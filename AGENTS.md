@@ -114,7 +114,7 @@ Examples:
 
 ### 4.3 Special emoji for releases / versions
 
-- Use **🔖 only for release / version related work**:
+- Use **🔖 only for release/version-related work**:
   - `🔖 chore(release): bump version to <new-version>`
   - `🔖 chore(release): prepare <version> release`
   - `🔖 chore(changelog): update changelog for <version>`
