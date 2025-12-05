@@ -10,14 +10,14 @@
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
         AllowsTransparency="True"
-        Background="#55000000"
+        Background="{DynamicResource OverlayBackgroundBrush}"
         MouseDown="OverlayWindow_MouseDown"
         ShowInTaskbar="False"
         Topmost="True">
     <Border Padding="12"
             Background="Transparent">
         <TextBlock Text="Sample overlay text"
-                   Foreground="White"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    FontSize="16"/>
     </Border>
 </Window>

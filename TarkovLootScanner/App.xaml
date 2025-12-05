@@ -11,5 +11,8 @@
 
         <SolidColorBrush x:Key="TitleBarCloseHoverBackgroundBrush" Color="#E81123"/>
         <SolidColorBrush x:Key="TitleBarClosePressedBackgroundBrush" Color="#C60F1A"/>
+
+        <SolidColorBrush x:Key="OverlayBackgroundBrush" Color="#55000000"/>
+        <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="White"/>
     </Application.Resources>
 </Application>
