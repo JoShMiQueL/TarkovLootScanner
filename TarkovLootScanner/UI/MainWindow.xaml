@@ -32,10 +32,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#22000000"/>
+                                <Setter Property="Background" Value="{DynamicResource TitleBarButtonHoverBackgroundBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#33000000"/>
+                                <Setter Property="Background" Value="{DynamicResource TitleBarButtonPressedBackgroundBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -48,17 +48,17 @@
                BasedOn="{StaticResource TitleBarButtonStyle}">
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Background" Value="{DynamicResource TitleBarCloseHoverBackgroundBrush}"/>
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#C60F1A"/>
+                    <Setter Property="Background" Value="{DynamicResource TitleBarClosePressedBackgroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <Border Background="#FF212121">
-        <Grid Background="#FF212121">
+    <Border Background="{DynamicResource ApplicationBackgroundBrush}">
+        <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
             <Grid.RowDefinitions>
                 <!-- Fila de title bar -->
                 <RowDefinition Height="32"/>
@@ -68,7 +68,7 @@
 
             <!-- TITLE BAR CUSTOM -->
             <Grid Grid.Row="0"
-                  Background="#FF212121">
+                  Background="{DynamicResource ApplicationBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <!-- Lado izquierdo arrastrable -->
                     <ColumnDefinition/>
@@ -110,7 +110,7 @@
 
             <!-- MAIN CONTENT -->
             <Grid Grid.Row="1"
-                  Background="#FF212121">
+                  Background="{DynamicResource ApplicationBackgroundBrush}">
                 <!-- Temporary button to open overlay -->
                 <Button Content="Open Overlay"
                         Width="110"
