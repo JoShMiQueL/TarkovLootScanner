@@ -11,6 +11,8 @@ namespace TarkovLootScanner
     /// </summary>
     public partial class MainWindow : Window
     {
+        private OverlayWindow? _overlayWindow;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -46,5 +48,39 @@ namespace TarkovLootScanner
             StatusText.Text = message;
         }
 
+        private void OpenOverlayButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+
+            // If overlay is not created or not visible, create and show it
+            if (_overlayWindow == null || !_overlayWindow.IsVisible)
+            {
+                _overlayWindow = new OverlayWindow();
+                _overlayWindow.Closed += (_, _) =>
+                {
+                    _overlayWindow = null;
+                    if (button != null)
+                    {
+                        button.Content = "Open Overlay";
+                    }
+                };
+                _overlayWindow.Show();
+
+                if (button != null)
+                {
+                    button.Content = "Close Overlay";
+                }
+            }
+            else
+            {
+                // Toggle off: close the overlay
+                _overlayWindow.Close();
+
+                if (button != null)
+                {
+                    button.Content = "Open Overlay";
+                }
+            }
+        }
     }
 }

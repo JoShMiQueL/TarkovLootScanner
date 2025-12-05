@@ -108,6 +108,17 @@
                 </StackPanel>
             </Grid>
 
+            <!-- MAIN CONTENT -->
+            <Grid Grid.Row="1"
+                  Background="#FF212121">
+                <!-- Temporary button to open overlay -->
+                <Button Content="Open Overlay"
+                        Width="110"
+                        Height="28"
+                        Margin="8"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Click="OpenOverlayButton_Click"/>
 
                 <!-- Status text at bottom-right -->
                 <TextBlock x:Name="StatusText"
@@ -117,6 +128,6 @@
                            HorizontalAlignment="Right"
                            VerticalAlignment="Bottom"/>
             </Grid>
-    </Grid>
+        </Grid>
     </Border>
 </Window>
