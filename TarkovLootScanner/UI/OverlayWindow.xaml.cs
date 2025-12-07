@@ -1,6 +1,7 @@
 ﻿﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -23,6 +24,25 @@ public partial class OverlayWindow : Window
   public OverlayWindow()
   {
     InitializeComponent();
+    Loaded += OverlayWindow_Loaded;
+  }
+
+  private async void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
+  {
+    try
+    {
+      var random = new Random();
+      int delay = random.Next(250, 501);
+      await Task.Delay(delay);
+
+      // After the simulated scan completes, hide scanning and show results.
+      ScanningText.Visibility = Visibility.Collapsed;
+      ResultsBlock.Visibility = Visibility.Visible;
+    }
+    catch (Exception ex)
+    {
+      System.Diagnostics.Debug.WriteLine($"Error during OverlayWindow loading sequence: {ex}");
+    }
   }
 
   private void OverlayWindow_MouseDown(object sender, MouseButtonEventArgs e)

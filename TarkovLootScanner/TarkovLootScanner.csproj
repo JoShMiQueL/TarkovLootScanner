@@ -11,4 +11,8 @@
     <FileVersion>$(Version)</FileVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\Placeholder.png" />
+  </ItemGroup>
+
 </Project>
