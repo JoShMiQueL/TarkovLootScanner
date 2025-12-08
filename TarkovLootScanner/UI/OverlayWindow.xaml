@@ -15,15 +15,17 @@
     Topmost="True"
     WindowStyle="None"
     mc:Ignorable="d">
-    <Border Padding="12" Background="Transparent">
-        <StackPanel VerticalAlignment="Center" Orientation="Vertical">
+    <Border Padding="12"
+            Background="Transparent">
+        <StackPanel VerticalAlignment="Center"
+                Orientation="Vertical">
             <!--  Scanning block  -->
             <TextBlock
                 x:Name="ScanningText"
                 FontSize="16"
                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 Text="Scanning..."
-                Visibility="Collapsed" />
+                Visibility="Collapsed"/>
 
             <!--  Results block  -->
             <StackPanel
@@ -32,8 +34,8 @@
                 Visibility="Visible">
                 <Grid x:Name="ResultsTitle">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Vertical">
@@ -43,7 +45,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Salewa (3 Slots)" />
+                            Text="Salewa (3 Slots)"/>
 
                         <TextBlock
                             x:Name="UpdatedText"
@@ -51,7 +53,7 @@
                             VerticalAlignment="Center"
                             FontSize="9"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Updated 1 hour ago" />
+                            Text="Updated 1 hour ago"/>
                     </StackPanel>
 
                     <Image
@@ -61,17 +63,20 @@
                         Height="32"
                         Margin="16,0,0,0"
                         VerticalAlignment="Center"
-                        Source="/Assets/Placeholder.png" />
+                        Source="/Assets/Placeholder.png"/>
                 </Grid>
 
-                <Separator Height="1" Margin="-12,12,-12,12" />
+                <Separator Height="1"
+                        Margin="-12,12,-12,12"/>
 
-                <StackPanel x:Name="ResultsProfit" Orientation="Vertical">
-                    <Grid Margin="0,0,0,0" Visibility="Visible">
+                <StackPanel x:Name="ResultsProfit"
+                        Orientation="Vertical">
+                    <Grid Margin="0,0,0,0"
+                            Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock
@@ -81,7 +86,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Profit Flea vs Trader" />
+                            Text="Profit Flea vs Trader"/>
 
                         <TextBlock
                             x:Name="ProfitResultText"
@@ -91,18 +96,21 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="14.420₽ (4.806₽)" />
+                            Text="14.420₽ (4.806₽)"/>
                     </Grid>
                 </StackPanel>
 
-                <Separator Height="1" Margin="-12,12,-12,12" />
+                <Separator Height="1"
+                        Margin="-12,12,-12,12"/>
 
-                <StackPanel x:Name="ResultsPrice" Orientation="Vertical">
-                    <Grid Margin="0,0,0,8" Visibility="Visible">
+                <StackPanel x:Name="ResultsPrice"
+                        Orientation="Vertical">
+                    <Grid Margin="0,0,0,8"
+                            Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock
@@ -112,7 +120,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Price" />
+                            Text="Price"/>
 
                         <TextBlock
                             x:Name="PriceResultText"
@@ -122,14 +130,15 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="23.420₽ (11.710₽)" />
+                            Text="23.420₽ (11.710₽)"/>
                     </Grid>
 
-                    <Grid Margin="0,0,0,8" Visibility="Visible">
+                    <Grid Margin="0,0,0,8"
+                            Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock
@@ -139,7 +148,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Low Avg24H Price" />
+                            Text="Low Avg24H Price"/>
 
                         <TextBlock
                             x:Name="LowAvg24HResultText"
@@ -149,18 +158,21 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="20 555₽ (10.277₽)" />
+                            Text="20 555₽ (10.277₽)"/>
                     </Grid>
                 </StackPanel>
 
-                <Separator Height="1" Margin="-12,12,-12,12" />
+                <Separator Height="1"
+                        Margin="-12,12,-12,12"/>
 
-                <StackPanel x:Name="ResultsTrader" Orientation="Vertical">
-                    <Grid Margin="0,0,0,0" Visibility="Visible">
+                <StackPanel x:Name="ResultsTrader"
+                        Orientation="Vertical">
+                    <Grid Margin="0,0,0,0"
+                            Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock
@@ -170,7 +182,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Therapist" />
+                            Text="Therapist"/>
 
                         <TextBlock
                             x:Name="TraderPriceResultText"
@@ -180,7 +192,7 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="9.000₽ (3.000₽)" />
+                            Text="9.000₽ (3.000₽)"/>
                     </Grid>
                 </StackPanel>
             </StackPanel>
