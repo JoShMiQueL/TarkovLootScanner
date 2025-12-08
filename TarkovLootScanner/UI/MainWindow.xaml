@@ -1,0 +1,189 @@
+﻿<Window x:Class="TarkovLootScanner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TarkovLootScanner"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        Height="450"
+        Width="800"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="True"
+        Background="Transparent">
+
+    <!-- Estilos de botones para el title bar custom -->
+    <Window.Resources>
+        <Style x:Key="TitleBarButtonStyle"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="Transparent"/>
+            <Setter Property="BorderBrush"
+                    Value="Transparent"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="Padding"
+                    Value="0"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="Focusable"
+                    Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource TitleBarButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource TitleBarButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleBarCloseButtonStyle"
+               TargetType="Button">
+            <Setter Property="Background"
+                    Value="Transparent"/>
+            <Setter Property="BorderBrush"
+                    Value="Transparent"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="Padding"
+                    Value="0"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+            <Setter Property="Focusable"
+                    Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource TitleBarCloseHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource TitleBarClosePressedBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource ApplicationBackgroundBrush}">
+        <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
+            <Grid.RowDefinitions>
+                <!-- Fila de title bar -->
+                <RowDefinition Height="32"/>
+                <!-- Fila de contenido -->
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- TITLE BAR CUSTOM -->
+            <Grid Grid.Row="0"
+                  Background="{DynamicResource ApplicationBackgroundBrush}">
+                <Grid.ColumnDefinitions>
+                    <!-- Lado izquierdo arrastrable -->
+                    <ColumnDefinition/>
+                    <!-- Lado derecho botones -->
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Zona arrastrable (sin botones) -->
+                <Border Grid.Column="0"
+                        Background="Transparent"
+                        MouseDown="TitleBar_MouseDown">
+                    <TextBlock Text="TarkovLootScanner"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0"
+                               Foreground="White"
+                               FontWeight="SemiBold"/>
+                </Border>
+
+                <!-- Botones del title bar -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal">
+                    <Button Width="40"
+                            Click="MinimizeButton_Click"
+                            Content="—"
+                            Style="{StaticResource TitleBarButtonStyle}"
+                            FontSize="14"/>
+                    <Button Width="40"
+                            Click="MaximizeButton_Click"
+                            Content="▢"
+                            Style="{StaticResource TitleBarButtonStyle}"
+                            FontSize="12"/>
+                    <Button Width="40"
+                            Click="CloseButton_Click"
+                            Content="✕"
+                            Style="{StaticResource TitleBarCloseButtonStyle}"
+                            FontSize="12"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- MAIN CONTENT -->
+            <Grid Grid.Row="1"
+                  Background="{DynamicResource ApplicationBackgroundBrush}">
+                <!-- Debug controls for opening overlay -->
+                <StackPanel Orientation="Horizontal"
+                            Margin="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top">
+                    <TextBox x:Name="ItemNameTextBox"
+                             Width="200"
+                             Height="28"
+                             Margin="0,0,8,0"
+                             VerticalContentAlignment="Center"
+                             Text="Salewa"
+                             Foreground="White"
+                             Background="{DynamicResource ApplicationBackgroundBrush}"
+                             BorderBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                             KeyDown="ItemNameTextBox_KeyDown">
+                        <TextBox.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="2"/>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Button Content="Open Overlay"
+                            x:Name="OpenOverlayButton"
+                            Width="110"
+                            Height="28"
+                            Click="OpenOverlayButton_Click"/>
+                </StackPanel>
+
+                <!-- Status text at bottom-right -->
+                <TextBlock x:Name="StatusText"
+                           Text="Initializing..."
+                           Foreground="White"
+                           Margin="0,0,8,4"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Bottom"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
