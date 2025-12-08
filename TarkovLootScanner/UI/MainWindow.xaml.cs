@@ -76,7 +76,10 @@ public partial class MainWindow : Window
         // If overlay is not created or not visible, create and show it
         if (_overlayWindow == null || !_overlayWindow.IsVisible)
         {
-            _overlayWindow = new OverlayWindow();
+            // Default item identifier for demo - can be made configurable later
+            string itemIdentifier = "Salewa"; // Salewa shortName for testing
+
+            _overlayWindow = new OverlayWindow(itemIdentifier);
             _overlayWindow.Closed += (_, _) =>
             {
                 try
