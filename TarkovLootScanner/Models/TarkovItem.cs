@@ -14,6 +14,7 @@ public class TarkovItem
     public int? LastLowPrice { get; set; }
     public int? Avg24hPrice { get; set; }
     public decimal? ChangeLast48hPercent { get; set; }
+    public int? FleaMarketFee { get; set; }
     public string? IconLink { get; set; }
     public string? Updated { get; set; }
     public int? Width { get; set; }

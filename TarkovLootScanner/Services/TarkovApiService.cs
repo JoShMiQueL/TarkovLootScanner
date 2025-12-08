@@ -70,6 +70,7 @@ public class TarkovApiService
     lastLowPrice
     avg24hPrice
     changeLast48hPercent
+    fleaMarketFee
     iconLink
     updated
     width
@@ -141,6 +142,7 @@ public class TarkovApiService
     lastLowPrice
     avg24hPrice
     changeLast48hPercent
+    fleaMarketFee
     iconLink
     width
     height
@@ -249,7 +251,7 @@ public class TarkovApiService
     }
 
     /// <summary>
-    /// Calculates the profit between flea and trader prices
+    /// Calculates the profit between flea and trader prices, accounting for flea market fees
     /// </summary>
     public static (int? profit, string description) CalculateProfit(TarkovItem item)
     {
@@ -265,9 +267,15 @@ public class TarkovApiService
         if (bestTraderEntry == null)
             return (null, "No trader data");
 
-        // Calculate profit: player's flea sell price - what traders pay
-        // In Tarkov, players sell items through flea market and receive payment after a small fee
-        var profit = item.LastLowPrice.Value - bestTraderEntry.PriceRUB;
+        // Calculate profit: (flea market received amount after fees) - (trader sell price)
+        // In Tarkov, flea market charges fees, so players receive lastLowPrice - fleaMarketFee
+        var fleaMarketReceived = item.LastLowPrice.Value;
+        if (item.FleaMarketFee.HasValue)
+        {
+            fleaMarketReceived = item.LastLowPrice.Value - item.FleaMarketFee.Value;
+        }
+
+        var profit = fleaMarketReceived - bestTraderEntry.PriceRUB;
 
         // Format profit - no per-slot breakdown for single-slot items
         var totalSlots = item.TotalSlots;
