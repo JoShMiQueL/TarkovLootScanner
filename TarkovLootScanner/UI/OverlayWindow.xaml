@@ -39,13 +39,22 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Vertical">
-                        <TextBlock
-                            x:Name="TitleText"
-                            Grid.Column="0"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                            Text="Salewa (3 Slots)"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                x:Name="TitleText"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                Text="Salewa (3 Slots)"/>
+                            <TextBlock
+                                x:Name="BannedTag"
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Foreground="Red"
+                                FontWeight="Bold"
+                                Text=" (BANNED)"
+                                Visibility="Collapsed"/>
+                        </StackPanel>
 
                         <TextBlock
                             x:Name="UpdatedText"
@@ -66,8 +75,10 @@
                         Source="/Assets/Placeholder.png"/>
                 </Grid>
 
-                <Separator Height="1"
-                           Margin="-12,12,-12,6"/>
+                <Separator x:Name="SeparatorTitleToProfit"
+                           Height="1"
+                           Margin="-12,12,-12,6"
+                           Visibility="Visible"/>
 
                 <StackPanel x:Name="ResultsProfit"
                             Orientation="Vertical">
@@ -100,8 +111,10 @@
                     </Grid>
                 </StackPanel>
 
-                <Separator Height="1"
-                           Margin="-12,8,-12,6"/>
+                <Separator x:Name="SeparatorProfitToPrice"
+                           Height="1"
+                           Margin="-12,8,-12,6"
+                           Visibility="Visible"/>
 
                 <StackPanel x:Name="ResultsPrice"
                             Orientation="Vertical">
@@ -162,8 +175,10 @@
                     </Grid>
                 </StackPanel>
 
-                <Separator Height="1"
-                           Margin="-12,8,-12,8"/>
+                <Separator x:Name="SeparatorPriceToTrader"
+                           Height="1"
+                           Margin="-12,8,-12,8"
+                           Visibility="Visible"/>
 
                 <StackPanel x:Name="ResultsTrader"
                             Orientation="Vertical">
@@ -176,7 +191,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Image Grid.Column="0"
+                        <Image x:Name="TraderImage"
+                               Grid.Column="0"
                                Width="32"
                                Height="32"
                                Margin="0,0,8,0"

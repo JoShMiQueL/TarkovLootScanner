@@ -1,8 +1,9 @@
-﻿using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 using TarkovLootScanner.UI;
+using TarkovLootScanner.Services;
 
 namespace TarkovLootScanner;
 
@@ -18,6 +19,19 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        // Close overlay window when main window is closing
+        if (_overlayWindow != null && _overlayWindow.IsVisible)
+        {
+            var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
+            logger.LogInformation("MainWindow - Closing overlay on application shutdown");
+            _overlayWindow.Close();
+        }
+
+        base.OnClosing(e);
+    }
+
     private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton == MouseButton.Left)
@@ -28,13 +42,13 @@ public partial class MainWindow : Window
             }
             catch (InvalidOperationException ex)
             {
-                // Swallow/log the exception to avoid crashing the UI thread during drag
-                System.Diagnostics.Debug.WriteLine($"Error during DragMove: {ex}");
+                var logger = App.ServiceProvider?.GetService<ILoggerService>();
+                logger?.LogWarning($"MainWindow - Error during DragMove: {ex.Message}");
             }
             catch (Exception ex)
             {
-                // Fallback catch to ensure no unexpected exceptions escape this fire-and-forget handler
-                System.Diagnostics.Debug.WriteLine($"Unexpected error during DragMove: {ex}");
+                var logger = App.ServiceProvider?.GetService<ILoggerService>();
+                logger?.LogError($"MainWindow - Unexpected DragMove error", ex);
             }
         }
     }
@@ -69,47 +83,69 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ToggleOverlay()
+    {
+        var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
+
+        // If overlay is currently open, close it
+        if (_overlayWindow != null && _overlayWindow.IsVisible)
+        {
+            logger.LogInformation("MainWindow - Closing existing overlay");
+            _overlayWindow.Close();
+            OpenOverlayButton.Content = "Open Overlay";
+            SetStatus("Overlay closed");
+            return;
+        }
+
+        // Otherwise, open a new overlay
+        var itemIdentifier = ItemNameTextBox.Text?.Trim();
+        if (string.IsNullOrEmpty(itemIdentifier))
+        {
+            logger.LogWarning("MainWindow - Attempted to open overlay with empty item name");
+            return;
+        }
+
+        logger.LogInformation($"MainWindow - Opening overlay for item: {itemIdentifier}");
+
+        // Create and show new overlay
+        _overlayWindow = new OverlayWindow(
+            itemIdentifier,
+            App.ServiceProvider.GetRequiredService<ITarkovApiService>(),
+            App.ServiceProvider.GetRequiredService<IPriceCalculationService>(),
+            App.ServiceProvider.GetRequiredService<ICacheService>()
+        );
+
+        _overlayWindow.Closed += (_, _) =>
+        {
+            try
+            {
+                _overlayWindow = null;
+                OpenOverlayButton.Content = "Open Overlay";
+                logger.LogInformation("MainWindow - Overlay closed");
+                SetStatus("Overlay closed");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("MainWindow - Error in overlay Closed handler", ex);
+            }
+        };
+
+        _overlayWindow.Show();
+        OpenOverlayButton.Content = "Close Overlay";
+        SetStatus($"Overlay opened for: {itemIdentifier}");
+    }
+
     private void OpenOverlayButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        ToggleOverlay();
+    }
 
-        // If overlay is not created or not visible, create and show it
-        if (_overlayWindow == null || !_overlayWindow.IsVisible)
+    private void ItemNameTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
         {
-            _overlayWindow = new OverlayWindow();
-            _overlayWindow.Closed += (_, _) =>
-            {
-                try
-                {
-                    _overlayWindow = null;
-                    if (button != null)
-                    {
-                        button.Content = "Open Overlay";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Swallow/log the exception to avoid crashing the UI thread
-                    System.Diagnostics.Debug.WriteLine($"Error in overlay Closed handler: {ex}");
-                }
-            };
-
-            _overlayWindow.Show();
-
-            if (button != null)
-            {
-                button.Content = "Close Overlay";
-            }
-        }
-        else
-        {
-            // Toggle off: close the overlay
-            _overlayWindow.Close();
-
-            if (button != null)
-            {
-                button.Content = "Open Overlay";
-            }
+            ToggleOverlay();
+            e.Handled = true; // Prevent the Enter key from being processed further
         }
     }
 }
