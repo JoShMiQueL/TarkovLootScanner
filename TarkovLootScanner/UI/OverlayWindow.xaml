@@ -1,35 +1,36 @@
-﻿<Window x:Class="TarkovLootScanner.UI.OverlayWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TarkovLootScanner.UI"
-        mc:Ignorable="d"
-        Title="Overlay"
-        WindowStyle="None"
-        ResizeMode="NoResize"
-        SizeToContent="WidthAndHeight"
-        AllowsTransparency="True"
-        Background="{DynamicResource OverlayBackgroundBrush}"
-        MouseDown="OverlayWindow_MouseDown"
-        ShowInTaskbar="False"
-        Topmost="True">
-    <Border Padding="12"
-            Background="Transparent">
-        <StackPanel Orientation="Vertical"
-                    VerticalAlignment="Center">
-            <!-- Scanning block -->
-            <TextBlock x:Name="ScanningText"
-                       Text="Scanning..."
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                       FontSize="16"
-                       Visibility="Collapsed" />
+﻿<Window
+    x:Class="TarkovLootScanner.UI.OverlayWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:TarkovLootScanner.UI"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Overlay"
+    AllowsTransparency="True"
+    Background="{DynamicResource OverlayBackgroundBrush}"
+    MouseDown="OverlayWindow_MouseDown"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False"
+    SizeToContent="WidthAndHeight"
+    Topmost="True"
+    WindowStyle="None"
+    mc:Ignorable="d">
+    <Border Padding="12" Background="Transparent">
+        <StackPanel VerticalAlignment="Center" Orientation="Vertical">
+            <!--  Scanning block  -->
+            <TextBlock
+                x:Name="ScanningText"
+                FontSize="16"
+                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                Text="Scanning..."
+                Visibility="Collapsed" />
 
-            <!-- Results block -->
-            <StackPanel x:Name="ResultsBlock"
-                        Orientation="Vertical"
-                        Visibility="Visible" >
-                <Grid x:Name="ResultsTitle" >
+            <!--  Results block  -->
+            <StackPanel
+                x:Name="ResultsBlock"
+                Orientation="Vertical"
+                Visibility="Visible">
+                <Grid x:Name="ResultsTitle">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -46,20 +47,21 @@
 
                         <TextBlock
                             x:Name="UpdatedText"
-                               Grid.Column="0"
+                            Grid.Column="0"
                             VerticalAlignment="Center"
                             FontSize="9"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="Updated 1 hour ago" />
                     </StackPanel>
 
-                    <Image x:Name="ItemImage"
-                           Source="/Assets/Placeholder.png"
-                           Grid.Column="1"
-                           Width="32"
-                           Height="32"
-                           Margin="16,0,0,0"
-                           VerticalAlignment="Center" />
+                    <Image
+                        x:Name="ItemImage"
+                        Grid.Column="1"
+                        Width="32"
+                        Height="32"
+                        Margin="16,0,0,0"
+                        VerticalAlignment="Center"
+                        Source="/Assets/Placeholder.png" />
                 </Grid>
 
                 <Separator Height="1" Margin="-12,12,-12,12" />
@@ -96,45 +98,57 @@
                 <Separator Height="1" Margin="-12,12,-12,12" />
 
                 <StackPanel x:Name="ResultsPrice" Orientation="Vertical">
-                    <Grid Margin="0,0,0,8"
-                          Visibility="Visible" >
+                    <Grid Margin="0,0,0,8" Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock x:Name="PriceText"
-                                   Grid.Column="0"
-                                   Grid.Row="0"
-                                   Text="Price"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   FontSize="16"
-                                   VerticalAlignment="Center" />
+                        <TextBlock
+                            x:Name="PriceText"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="Price" />
 
-                        <TextBlock x:Name="PriceResultText"
-                                    Grid.Column="1"
-                                    Grid.Row="0"
-                                    Text="23.420₽ (11.710₽)"
-                                    Margin="64,0,0,0"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    FontSize="16"
-                                    VerticalAlignment="Center" />
+                        <TextBlock
+                            x:Name="PriceResultText"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="64,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="23.420₽ (11.710₽)" />
                     </Grid>
 
-                    <Grid Margin="0,0,0,0"
-                          Visibility="Visible" >
+                    <Grid Margin="0,0,0,8" Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock x:Name="LowAvg24HText"
-                                   Grid.Column="0"
-                                   Grid.Row="1"
-                                   Text="Low Avg24H Price"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                        <TextBlock
+                            x:Name="LowAvg24HText"
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="Low Avg24H Price" />
+
+                        <TextBlock
+                            x:Name="LowAvg24HResultText"
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="64,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="20 555₽ (10.277₽)" />
                     </Grid>
                 </StackPanel>
@@ -154,18 +168,18 @@
                             Grid.Row="0"
                             Grid.Column="0"
                             VerticalAlignment="Center"
-                                   FontSize="16"
+                            FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="Therapist" />
 
                         <TextBlock
                             x:Name="TraderPriceResultText"
                             Grid.Row="0"
-                                    Grid.Column="1"
-                                    Margin="64,0,0,0"
+                            Grid.Column="1"
+                            Margin="64,0,0,0"
                             VerticalAlignment="Center"
                             FontSize="16"
-                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                             Text="9.000₽ (3.000₽)" />
                     </Grid>
                 </StackPanel>
