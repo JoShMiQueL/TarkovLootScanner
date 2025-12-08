@@ -53,6 +53,37 @@
 
                 <Separator Height="1" Margin="-12,12,-12,12" />
 
+                <StackPanel x:Name="ResultsProfit" Orientation="Vertical">
+                    <Grid Margin="0,0,0,0" Visibility="Visible">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            x:Name="ProfitText"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="Profit Flea vs Trader" />
+
+                        <TextBlock
+                            x:Name="ProfitResultText"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="64,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="14.420₽ (4.806₽)" />
+                    </Grid>
+                </StackPanel>
+
+                <Separator Height="1" Margin="-12,12,-12,12" />
+
                 <StackPanel x:Name="ResultsPrice" Orientation="Vertical">
                     <Grid Margin="0,0,0,8"
                           Visibility="Visible" >
