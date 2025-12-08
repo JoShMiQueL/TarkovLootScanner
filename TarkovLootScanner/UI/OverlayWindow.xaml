@@ -18,7 +18,7 @@
     <Border Padding="12"
             Background="Transparent">
         <StackPanel VerticalAlignment="Center"
-                Orientation="Vertical">
+                    Orientation="Vertical">
             <!--  Scanning block  -->
             <TextBlock
                 x:Name="ScanningText"
@@ -67,12 +67,12 @@
                 </Grid>
 
                 <Separator Height="1"
-                        Margin="-12,12,-12,12"/>
+                           Margin="-12,12,-12,6"/>
 
                 <StackPanel x:Name="ResultsProfit"
-                        Orientation="Vertical">
+                            Orientation="Vertical">
                     <Grid Margin="0,0,0,0"
-                            Visibility="Visible">
+                          Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -101,12 +101,12 @@
                 </StackPanel>
 
                 <Separator Height="1"
-                        Margin="-12,12,-12,12"/>
+                           Margin="-12,8,-12,6"/>
 
                 <StackPanel x:Name="ResultsPrice"
-                        Orientation="Vertical">
+                            Orientation="Vertical">
                     <Grid Margin="0,0,0,8"
-                            Visibility="Visible">
+                          Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -133,8 +133,8 @@
                             Text="23.420₽ (11.710₽)"/>
                     </Grid>
 
-                    <Grid Margin="0,0,0,8"
-                            Visibility="Visible">
+                    <Grid Margin="0,0,0,0"
+                          Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -163,22 +163,36 @@
                 </StackPanel>
 
                 <Separator Height="1"
-                        Margin="-12,12,-12,12"/>
+                           Margin="-12,8,-12,8"/>
 
                 <StackPanel x:Name="ResultsTrader"
-                        Orientation="Vertical">
+                            Orientation="Vertical">
                     <Grid Margin="0,0,0,0"
-                            Visibility="Visible">
+                          Visibility="Visible">
 
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
+                        <Image Grid.Column="0"
+                               Width="32"
+                               Height="32"
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               Source="/Assets/Placeholder.png"
+                               Stretch="UniformToFill">
+                            <Image.Clip>
+                                <EllipseGeometry Center="16,16"
+                                                 RadiusX="16"
+                                                 RadiusY="16"/>
+                            </Image.Clip>
+                        </Image>
+
                         <TextBlock
                             x:Name="TraderPriceText"
-                            Grid.Row="0"
-                            Grid.Column="0"
+                            Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -186,8 +200,7 @@
 
                         <TextBlock
                             x:Name="TraderPriceResultText"
-                            Grid.Row="0"
-                            Grid.Column="1"
+                            Grid.Column="2"
                             Margin="64,0,0,0"
                             VerticalAlignment="Center"
                             FontSize="16"
