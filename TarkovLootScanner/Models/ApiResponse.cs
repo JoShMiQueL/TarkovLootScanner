@@ -38,4 +38,5 @@ public class TarkovCacheData
 {
     public List<TarkovItem> Items { get; set; } = new List<TarkovItem>();
     public List<TraderInfo> Traders { get; set; } = new List<TraderInfo>();
+    public DateTime LastUpdate { get; set; }
 }

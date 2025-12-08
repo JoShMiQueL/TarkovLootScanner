@@ -167,9 +167,7 @@ public class TarkovApiService : ITarkovApiService
 
                             _logger.LogInformation($"API - Deserialized data - Items: {items.Count}, Traders: {traders.Count}");
 
-                            cachedData = new TarkovCacheData { Items = items, Traders = traders };
-
-                            _logger.LogInformation($"API - Received {items.Count} items and {traders.Count} traders");
+                        cachedData = new TarkovCacheData { Items = items, Traders = traders, LastUpdate = DateTime.UtcNow };
                         }
                         else
                         {
@@ -181,6 +179,9 @@ public class TarkovApiService : ITarkovApiService
                         var cacheSaveStart = DateTime.Now;
                         await _cacheService.SaveDataToFileAsync("cache_data.json", cachedData);
                         var cacheSaveTime = DateTime.Now - cacheSaveStart;
+
+                        _logger.LogInformation($"API - Received {items.Count} items and {traders.Count} traders - DATA FETCHED FROM API");
+                        _logger.LogInformation($"API - Total API call time: {(apiCallTime.TotalMilliseconds):F2}ms, Deserialization: {(deserializationTime.TotalMilliseconds):F2}ms, File save: {(cacheSaveTime.TotalMilliseconds):F2}ms");
 
                         await _logger.LogAPICallAsync("GraphQL_AllData", apiCallTime, true);
                         await _logger.LogPerformanceAsync("JSON_Deserialization", deserializationTime, $"Items: {items.Count}, Traders: {traders.Count}");
@@ -206,8 +207,12 @@ public class TarkovApiService : ITarkovApiService
         }
         else
         {
-            _logger.LogInformation($"CACHE - Using existing cache data with {cachedData!.Items?.Count ?? 0} items and {cachedData!.Traders?.Count ?? 0} traders");
-            await _logger.LogPerformanceAsync("Cache_Load", DateTime.Now - startTime, "Existing data loaded");
+            string lastUpdateInfo = cachedData!.LastUpdate != default(DateTime)
+                ? $" (Last updated: {cachedData.LastUpdate:yyyy-MM-dd HH:mm:ss UTC}, age: {(DateTime.UtcNow - cachedData.LastUpdate).TotalMinutes:F1} minutes)"
+                : " (no timestamp available)";
+
+            _logger.LogInformation($"CACHE - Using existing cache data with {cachedData.Items?.Count ?? 0} items and {cachedData.Traders?.Count ?? 0} traders{lastUpdateInfo}");
+            await _logger.LogPerformanceAsync("Cache_Load", DateTime.Now - startTime, $"Existing data loaded{lastUpdateInfo}");
         }
     }
 

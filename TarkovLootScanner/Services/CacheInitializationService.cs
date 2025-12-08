@@ -53,16 +53,40 @@ public class CacheInitializationService : IDisposable
     private async void OnUpdateTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         var updateStart = DateTime.Now;
-        _logger.LogInformation("Starting periodic cache update");
+        _logger.LogInformation("PERIODIC CACHE UPDATE - Starting background data refresh");
 
         try
         {
+            // Check cache age before update
+            var cachedData = await new FileCacheService(_logger).LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
+            if (cachedData?.LastUpdate != default(DateTime))
+            {
+                var age = DateTime.UtcNow - cachedData!.LastUpdate;
+                _logger.LogInformation($"PERIODIC CACHE UPDATE - Current cache age: {(int)age.TotalMinutes} minutes ({cachedData.LastUpdate:yyyy-MM-dd HH:mm:ss UTC})");
+            }
+
             await _apiService.LoadAllDataForCacheAsync();
-            await _logger.LogPerformanceAsync("Periodic_Cache_Update", DateTime.Now - updateStart, "Background cache refreshed");
+
+            // Check if data was actually updated
+            var updatedData = await new FileCacheService(_logger).LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
+            var updateDuration = DateTime.Now - updateStart;
+
+            if ((updatedData?.LastUpdate ?? DateTime.MinValue) != (cachedData?.LastUpdate ?? DateTime.MinValue))
+            {
+                _logger.LogInformation($"PERIODIC CACHE UPDATE - SUCCESS: Data refreshed in {updateDuration.TotalSeconds:F1}s");
+                _logger.LogInformation($"PERIODIC CACHE UPDATE - New cache timestamp: {updatedData?.LastUpdate:yyyy-MM-dd HH:mm:ss UTC}");
+            }
+            else
+            {
+                _logger.LogInformation($"PERIODIC CACHE UPDATE - COMPLETED in {updateDuration.TotalSeconds:F1}s (no data changes detected)");
+            }
+
+            await _logger.LogPerformanceAsync("Periodic_Cache_Update", updateDuration, "Background cache check completed");
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to update cache periodically", ex);
+            var errorDuration = DateTime.Now - updateStart;
+            _logger.LogError($"PERIODIC CACHE UPDATE - FAILED after {errorDuration.TotalSeconds:F1}s", ex);
         }
     }
 
