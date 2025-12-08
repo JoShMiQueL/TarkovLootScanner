@@ -42,13 +42,13 @@ public partial class MainWindow : Window
             }
             catch (InvalidOperationException ex)
             {
-                var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
-                logger.LogWarning($"MainWindow - Error during DragMove: {ex.Message}");
+                var logger = App.ServiceProvider?.GetService<ILoggerService>();
+                logger?.LogWarning($"MainWindow - Error during DragMove: {ex.Message}");
             }
             catch (Exception ex)
             {
-                var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
-                logger.LogError($"MainWindow - Unexpected DragMove error", ex);
+                var logger = App.ServiceProvider?.GetService<ILoggerService>();
+                logger?.LogError($"MainWindow - Unexpected DragMove error", ex);
             }
         }
     }
