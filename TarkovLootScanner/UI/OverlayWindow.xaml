@@ -35,12 +35,23 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock x:Name="TitleText"
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock
+                            x:Name="TitleText"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="Salewa (3 Slots)" />
+
+                        <TextBlock
+                            x:Name="UpdatedText"
                                Grid.Column="0"
-                               Text="Salewa (3 Slots)"
+                            VerticalAlignment="Center"
+                            FontSize="9"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               FontSize="16"
-                               VerticalAlignment="Center" />
+                            Text="Updated 1 hour ago" />
+                    </StackPanel>
 
                     <Image x:Name="ItemImage"
                            Source="/Assets/Placeholder.png"
