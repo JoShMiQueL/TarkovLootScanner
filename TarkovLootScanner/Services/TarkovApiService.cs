@@ -14,6 +14,7 @@ public class TarkovApiService : ITarkovApiService
     private readonly ILoggerService _logger;
     private readonly HttpClient? _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly TimeSpan _cacheValidityPeriod = TimeSpan.FromMinutes(15);
 
     public TarkovApiService(ICacheService cacheService, ILoggerService logger)
     {
@@ -84,12 +85,18 @@ public class TarkovApiService : ITarkovApiService
         var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
         _logger.LogInformation($"CACHE - Cache data loaded in {(DateTime.Now - startTime).TotalMilliseconds}ms");
 
-        // Check if we need to load data from API (null or empty cache)
+        // Check if we need to load data from API (null, empty cache, or stale cache)
         bool needsApiLoad = cachedData == null ||
-                          (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0);
+                          (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0) ||
+                          (cachedData.LastUpdate != default(DateTime) && DateTime.UtcNow - cachedData.LastUpdate > _cacheValidityPeriod);
 
         if (needsApiLoad)
         {
+            string reason = cachedData == null ? "no cache data exists" :
+                           (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0) ? "cache data is empty" :
+                           $"cache data is stale (>{_cacheValidityPeriod.TotalMinutes} minutes old)";
+            _logger.LogInformation($"API - Fetching fresh data from API because: {reason}");
+
             if (_httpClient != null)
             {
                 // Single GraphQL query for all data (fixed for tarkov.dev schema)
@@ -142,9 +149,9 @@ public class TarkovApiService : ITarkovApiService
 
                     if (response.IsSuccessStatusCode)
                     {
-                        // Debug: Read raw response first
+                        // Read raw response
                         var rawJson = await response.Content.ReadAsStringAsync();
-                        _logger.LogInformation($"API - Raw GraphQL response length: {rawJson.Length} chars");
+                        _logger.LogInformation($"API - GraphQL response length: {rawJson.Length} chars");
 
                         var items = new List<TarkovItem>();
                         var traders = new List<TraderInfo>();
@@ -152,8 +159,6 @@ public class TarkovApiService : ITarkovApiService
 
                         if (!string.IsNullOrEmpty(rawJson))
                         {
-                            _logger.LogInformation($"API - Raw response preview: {rawJson.Substring(0, Math.Min(500, rawJson.Length))}");
-
                             var deserializationStart = DateTime.Now;
                             var result = JsonSerializer.Deserialize<GraphQLResponse<CombinedDataResponse>>(rawJson, _jsonOptions);
                             deserializationTime = DateTime.Now - deserializationStart;
