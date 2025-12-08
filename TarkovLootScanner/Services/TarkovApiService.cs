@@ -256,6 +256,21 @@ public class TarkovApiService : ITarkovApiService
         return cachedData!;
     }
 
+    private async Task CacheTraderAvatarsAsync(IEnumerable<TraderInfo> traders)
+    {
+        foreach (var trader in traders)
+        {
+            if (!string.IsNullOrEmpty(trader.ImageLink) && !string.IsNullOrEmpty(trader.Id))
+            {
+                var cachedPath = _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
+                if (cachedPath == null)
+                {
+                    await _cacheService.DownloadAndCacheImageAsync(trader.ImageLink, "traders", $"{trader.Id}.png");
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Fetches trader data for avatar URLs from cached data
     /// </summary>
@@ -267,17 +282,7 @@ public class TarkovApiService : ITarkovApiService
         if (cachedData?.Traders != null)
         {
             // Cache trader avatar images
-            foreach (var trader in cachedData!.Traders)
-            {
-                if (!string.IsNullOrEmpty(trader.ImageLink) && !string.IsNullOrEmpty(trader.Id))
-                {
-                    var cachedPath = _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
-                    if (cachedPath == null)
-                    {
-                        await _cacheService.DownloadAndCacheImageAsync(trader.ImageLink, "traders", $"{trader.Id}.png");
-                    }
-                }
-            }
+            await CacheTraderAvatarsAsync(cachedData.Traders);
         }
         else
         {
@@ -288,17 +293,7 @@ public class TarkovApiService : ITarkovApiService
             cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
             if (cachedData?.Traders != null)
             {
-                foreach (var trader in cachedData!.Traders)
-                {
-                    if (!string.IsNullOrEmpty(trader.ImageLink) && !string.IsNullOrEmpty(trader.Id))
-                    {
-                        var cachedPath = _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
-                        if (cachedPath == null)
-                        {
-                            await _cacheService.DownloadAndCacheImageAsync(trader.ImageLink, "traders", $"{trader.Id}.png");
-                        }
-                    }
-                }
+                await CacheTraderAvatarsAsync(cachedData.Traders);
             }
         }
     }
