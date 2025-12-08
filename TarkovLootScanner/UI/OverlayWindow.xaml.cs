@@ -1,4 +1,5 @@
-﻿﻿using System.ComponentModel;
+﻿﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -15,6 +16,7 @@ namespace TarkovLootScanner.UI;
 public partial class OverlayWindow : Window, INotifyPropertyChanged
 {
     private readonly TarkovApiService _apiService;
+    private readonly ConcurrentDictionary<string, BitmapImage> _traderImageCache;
     private TarkovItem? _currentItem;
     public string ItemIdentifier { get; set; }
     // Debug flag: when true, allows dragging the overlay to reposition it.
@@ -24,6 +26,7 @@ public partial class OverlayWindow : Window, INotifyPropertyChanged
     {
         ItemIdentifier = itemIdentifier;
         _apiService = new TarkovApiService();
+        _traderImageCache = new ConcurrentDictionary<string, BitmapImage>();
         InitializeComponent();
         Loaded += OverlayWindow_Loaded;
 
@@ -184,48 +187,31 @@ public partial class OverlayWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private string? GetTraderAvatarUrl(string traderName)
-    {
-        // Map trader names to their imageLink from Tarkov.dev API
-        // These URLs were obtained from querying the traders endpoint
-        var traderAvatarUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Prapor"] = "https://assets.tarkov.dev/54cb50c76803fa8b248b4571.webp",
-            ["Therapist"] = "https://assets.tarkov.dev/54cb57776803fa99248b456e.webp",
-            ["Fence"] = "https://assets.tarkov.dev/579dc571d53a0658a154fbec.webp",
-            ["Skier"] = "https://assets.tarkov.dev/58330581ace78e27b8b10cee.webp",
-            ["Peacekeeper"] = "https://assets.tarkov.dev/5935c25fb3acc3127c3d8cd9.webp",
-            ["Mechanic"] = "https://assets.tarkov.dev/5a7c2eca46aef81a7ca2145d.webp",
-            ["Ragman"] = "https://assets.tarkov.dev/5ac3b934156ae10c4430e83c.webp",
-            ["Jaeger"] = "https://assets.tarkov.dev/5c0647fdd443bc2504c2d371.webp"
-        };
-
-        if (traderAvatarUrls.TryGetValue(traderName, out var avatarUrl))
-        {
-            return avatarUrl;
-        }
-
-        // Try partial matches
-        foreach (var kvp in traderAvatarUrls)
-        {
-            if (traderName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
-            {
-                return kvp.Value;
-            }
-        }
-
-        return null;
-    }
-
     private async Task LoadTraderAvatarAsync(string traderName)
     {
-        var traderAvatarUrl = GetTraderAvatarUrl(traderName);
-        System.Diagnostics.Debug.WriteLine($"Loading trader avatar for: {traderName} from URL: {traderAvatarUrl}");
+        System.Diagnostics.Debug.WriteLine($"Loading trader avatar for: {traderName}");
 
-        if (string.IsNullOrEmpty(traderAvatarUrl)) return;
+        // Check local image cache first
+        if (_traderImageCache.TryGetValue(traderName, out var cachedImage))
+        {
+            TraderImage.Source = cachedImage;
+            System.Diagnostics.Debug.WriteLine($"Trader avatar loaded from local cache for {traderName}");
+            return;
+        }
 
         try
         {
+            // Get trader avatar URL dynamically from API
+            var traderAvatarUrl = await _apiService.GetTraderAvatarUrlAsync(traderName);
+            System.Diagnostics.Debug.WriteLine($"Trader avatar URL for {traderName}: {traderAvatarUrl}");
+
+            if (string.IsNullOrEmpty(traderAvatarUrl))
+            {
+                System.Diagnostics.Debug.WriteLine($"No avatar URL found for trader {traderName}");
+                return;
+            }
+
+            // Download image
             using var client = new HttpClient();
             var imageBytes = await client.GetByteArrayAsync(traderAvatarUrl);
 
@@ -240,8 +226,11 @@ public partial class OverlayWindow : Window, INotifyPropertyChanged
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.EndInit();
 
+                    // Cache the bitmap image locally
+                    _traderImageCache[traderName] = bitmap;
+
                     TraderImage.Source = bitmap;
-                    System.Diagnostics.Debug.WriteLine("Trader avatar loaded successfully from API");
+                    System.Diagnostics.Debug.WriteLine($"Trader avatar loaded and cached successfully for {traderName}");
                 }
                 catch (Exception ex)
                 {

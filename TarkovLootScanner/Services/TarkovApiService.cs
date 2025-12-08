@@ -15,6 +15,7 @@ public class TarkovApiService
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly ConcurrentDictionary<string, CacheEntry<TarkovItem>> _itemCache;
     private readonly ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>> _itemsCache;
+    private readonly ConcurrentDictionary<string, string> _traderAvatarCache;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(15);
     private readonly object _cacheLock = new();
 
@@ -48,6 +49,7 @@ public class TarkovApiService
 
         _itemCache = new ConcurrentDictionary<string, CacheEntry<TarkovItem>>();
         _itemsCache = new ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>>();
+        _traderAvatarCache = new ConcurrentDictionary<string, string>();
     }
 
     /// <summary>
@@ -188,6 +190,75 @@ public class TarkovApiService
             System.Diagnostics.Debug.WriteLine($"Error fetching items by name: {ex.Message}");
             return new List<TarkovItem>();
         }
+    }
+
+    /// <summary>
+    /// Fetches trader data for avatar URLs and caches them
+    /// </summary>
+    public async Task LoadTraderAvatarsAsync()
+    {
+        // Only load if cache is empty
+        if (_traderAvatarCache.Any())
+            return;
+
+        var query = @"{
+  traders {
+    name
+    imageLink
+  }
+}";
+
+        var request = new { query };
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("graphql", request);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<TradersResponse>>(_jsonOptions);
+            var traders = result?.Data?.Traders;
+
+            if (traders != null)
+            {
+                foreach (var trader in traders)
+                {
+                    if (!string.IsNullOrEmpty(trader.Name) && !string.IsNullOrEmpty(trader.ImageLink))
+                    {
+                        _traderAvatarCache[trader.Name] = trader.ImageLink;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error fetching trader avatars: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Gets the trader avatar URL from cache, loading traders if necessary
+    /// </summary>
+    public async Task<string?> GetTraderAvatarUrlAsync(string traderName)
+    {
+        // Ensure traders are loaded
+        await LoadTraderAvatarsAsync();
+
+        // Try exact match first
+        if (_traderAvatarCache.TryGetValue(traderName, out var avatarUrl))
+        {
+            return avatarUrl;
+        }
+
+        // Try partial matches
+        foreach (var kvp in _traderAvatarCache)
+        {
+            if (traderName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                return kvp.Value;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
