@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -6,12 +7,30 @@ using TarkovLootScanner.Models;
 namespace TarkovLootScanner.Services;
 
 /// <summary>
-/// Service for interacting with the Tarkov.dev GraphQL API
+/// Service for interacting with the Tarkov.dev GraphQL API with caching
 /// </summary>
 public class TarkovApiService
 {
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ConcurrentDictionary<string, CacheEntry<TarkovItem>> _itemCache;
+    private readonly ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>> _itemsCache;
+    private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(15);
+    private readonly object _cacheLock = new();
+
+    private class CacheEntry<T>
+    {
+        public T Data { get; set; }
+        public DateTime Timestamp { get; set; }
+
+        public CacheEntry(T data)
+        {
+            Data = data;
+            Timestamp = DateTime.UtcNow;
+        }
+
+        public bool IsExpired() => DateTime.UtcNow - Timestamp > TimeSpan.FromMinutes(15);
+    }
 
     public TarkovApiService()
     {
@@ -26,13 +45,22 @@ public class TarkovApiService
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             PropertyNameCaseInsensitive = true
         };
+
+        _itemCache = new ConcurrentDictionary<string, CacheEntry<TarkovItem>>();
+        _itemsCache = new ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>>();
     }
 
     /// <summary>
-    /// Fetches item data by ID
+    /// Fetches item data by ID with caching
     /// </summary>
     public async Task<TarkovItem?> GetItemByIdAsync(string itemId)
     {
+        // Check cache first
+        if (_itemCache.TryGetValue(itemId, out var cacheEntry) && !cacheEntry.IsExpired())
+        {
+            return cacheEntry.Data;
+        }
+
         var query = @"{
   item(id: """ + itemId + @""") {
     id
@@ -76,7 +104,15 @@ public class TarkovApiService
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<ItemResponse>>(_jsonOptions);
-            return result?.Data?.Item;
+            var item = result?.Data?.Item;
+
+            // Cache the result if successful
+            if (item != null)
+            {
+                _itemCache[itemId] = new CacheEntry<TarkovItem>(item);
+            }
+
+            return item;
         }
         catch (Exception ex)
         {
@@ -86,10 +122,16 @@ public class TarkovApiService
     }
 
     /// <summary>
-    /// Fetches item data by name (searches for items containing the name)
+    /// Fetches item data by name (searches for items containing the name) with caching
     /// </summary>
     public async Task<List<TarkovItem>> GetItemsByNameAsync(string itemName)
     {
+        // Check cache first
+        if (_itemsCache.TryGetValue(itemName, out var cacheEntry) && !cacheEntry.IsExpired())
+        {
+            return cacheEntry.Data;
+        }
+
         var query = @"{
   items(name: """ + itemName + @""") {
     id
@@ -132,13 +174,61 @@ public class TarkovApiService
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<ItemsResponse>>(_jsonOptions);
-            return result?.Data?.Items ?? new List<TarkovItem>();
+            var items = result?.Data?.Items ?? new List<TarkovItem>();
+
+            // Cache the result if successful
+            _itemsCache[itemName] = new CacheEntry<List<TarkovItem>>(items);
+
+            return items;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error fetching items by name: {ex.Message}");
             return new List<TarkovItem>();
         }
+    }
+
+    /// <summary>
+    /// Clears expired cache entries to free memory
+    /// </summary>
+    public void ClearExpiredCache()
+    {
+        lock (_cacheLock)
+        {
+            // Remove expired entries from item cache
+            var expiredItemKeys = _itemCache.Where(kvp => kvp.Value.IsExpired()).Select(kvp => kvp.Key).ToList();
+            foreach (var key in expiredItemKeys)
+            {
+                _itemCache.TryRemove(key, out _);
+            }
+
+            // Remove expired entries from items cache
+            var expiredItemsKeys = _itemsCache.Where(kvp => kvp.Value.IsExpired()).Select(kvp => kvp.Key).ToList();
+            foreach (var key in expiredItemsKeys)
+            {
+                _itemsCache.TryRemove(key, out _);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clears all cache entries
+    /// </summary>
+    public void ClearAllCache()
+    {
+        lock (_cacheLock)
+        {
+            _itemCache.Clear();
+            _itemsCache.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Gets cache statistics for monitoring
+    /// </summary>
+    public (int totalItemsCached, int totalListsCached) GetCacheStatistics()
+    {
+        return (_itemCache.Count, _itemsCache.Count);
     }
 
     /// <summary>
