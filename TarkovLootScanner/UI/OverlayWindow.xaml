@@ -135,17 +135,38 @@
                                    Grid.Row="1"
                                    Text="Low Avg24H Price"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   FontSize="16"
-                                   VerticalAlignment="Center" />
+                            Text="20 555₽ (10.277₽)" />
+                    </Grid>
+                </StackPanel>
 
-                        <TextBlock x:Name="LowAvg24HResultText"
+                <Separator Height="1" Margin="-12,12,-12,12" />
+
+                <StackPanel x:Name="ResultsTrader" Orientation="Vertical">
+                    <Grid Margin="0,0,0,0" Visibility="Visible">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            x:Name="TraderPriceText"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                                   FontSize="16"
+                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                            Text="Therapist" />
+
+                        <TextBlock
+                            x:Name="TraderPriceResultText"
+                            Grid.Row="0"
                                     Grid.Column="1"
-                                    Grid.Row="1"
-                                    Text="20 555₽ (10.277₽)"
                                     Margin="64,0,0,0"
+                            VerticalAlignment="Center"
+                            FontSize="16"
                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                    FontSize="16"
-                                    VerticalAlignment="Center" />
+                            Text="9.000₽ (3.000₽)" />
                     </Grid>
                 </StackPanel>
             </StackPanel>
