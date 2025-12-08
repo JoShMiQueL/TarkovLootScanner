@@ -9,14 +9,16 @@ public class CacheInitializationService : IDisposable
 {
     private readonly ITarkovApiService _apiService;
     private readonly ILoggerService _logger;
+    private readonly ICacheService _cacheService;
     private readonly System.Timers.Timer? _updateTimer;
     private readonly TimeSpan _updateInterval = TimeSpan.FromMinutes(15);
     private bool _isDisposed;
 
-    public CacheInitializationService(ITarkovApiService apiService, ILoggerService logger)
+    public CacheInitializationService(ITarkovApiService apiService, ILoggerService logger, ICacheService cacheService)
     {
         _apiService = apiService;
         _logger = logger;
+        _cacheService = cacheService;
 
         // Configure periodic updates
         _updateTimer = new System.Timers.Timer(_updateInterval.TotalMilliseconds);
@@ -58,7 +60,7 @@ public class CacheInitializationService : IDisposable
         try
         {
             // Check cache age before update
-            var cachedData = await new FileCacheService(_logger).LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
+            var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
             if (cachedData?.LastUpdate != default(DateTime))
             {
                 var age = DateTime.UtcNow - cachedData!.LastUpdate;
@@ -68,7 +70,7 @@ public class CacheInitializationService : IDisposable
             await _apiService.LoadAllDataForCacheAsync();
 
             // Check if data was actually updated
-            var updatedData = await new FileCacheService(_logger).LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
+            var updatedData = await _cacheService.LoadDataFromFileAsync<TarkovLootScanner.Models.TarkovCacheData>("cache_data.json");
             var updateDuration = DateTime.Now - updateStart;
 
             if ((updatedData?.LastUpdate ?? DateTime.MinValue) != (cachedData?.LastUpdate ?? DateTime.MinValue))
@@ -96,7 +98,11 @@ public class CacheInitializationService : IDisposable
             return;
 
         _isDisposed = true;
-        _updateTimer?.Dispose();
+        if (_updateTimer != null)
+        {
+            _updateTimer.Elapsed -= OnUpdateTimerElapsed;
+            _updateTimer.Dispose();
+        }
         _logger.LogInformation("CacheInitializationService disposed");
     }
 }

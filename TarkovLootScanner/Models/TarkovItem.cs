@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace TarkovLootScanner.Models;
 
@@ -27,26 +28,27 @@ public class TarkovItem
     {
         get
         {
-            int slots = (Width ?? 1) * (Height ?? 1);
-            // Update all price entries with the correct slot count
-            if (SellFor != null)
-            {
-                foreach (var priceEntry in SellFor)
-                {
-                    priceEntry.TotalSlots = slots;
-                }
-            }
-            if (BuyFor != null)
-            {
-                foreach (var priceEntry in BuyFor)
-                {
-                    priceEntry.TotalSlots = slots;
-                }
-            }
-            return slots;
+            return (Width ?? 1) * (Height ?? 1);
         }
     }
 
+    /// <summary>
+    /// Propagates slot count to all price entries. Call after deserialization.
+    /// </summary>
+    public void UpdatePriceEntrySlots()
+    {
+        int slots = TotalSlots;
+        if (SellFor != null)
+        {
+            foreach (var priceEntry in SellFor)
+                priceEntry.TotalSlots = slots;
+        }
+        if (BuyFor != null)
+        {
+            foreach (var priceEntry in BuyFor)
+                priceEntry.TotalSlots = slots;
+        }
+    }
     public string DisplayName => TotalSlots == 1 ? ShortName : $"{ShortName} ({TotalSlots} Slot{(TotalSlots != 1 ? "s" : "")})";
 
     public string FormattedLastLowPrice => LastLowPrice.HasValue ?
@@ -60,10 +62,10 @@ public class TarkovItem
     {
         get
         {
-            if (string.IsNullOrEmpty(Updated) || !DateTime.TryParse(Updated, out var updateTime))
+            if (string.IsNullOrEmpty(Updated) || !DateTime.TryParse(Updated, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var updateTime))
                 return "Updated recently";
 
-            var timeAgo = DateTime.Now - updateTime;
+            var timeAgo = DateTime.UtcNow - updateTime;
             if (timeAgo.TotalMinutes < 1)
                 return "Updated just now";
             if (timeAgo.TotalMinutes < 60)

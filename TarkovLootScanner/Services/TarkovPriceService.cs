@@ -55,7 +55,7 @@ public class TarkovPriceService : IPriceCalculationService
         var profit = fleaMarketReceived - bestTraderEntry.PriceRUB;
 
         // Format profit with sign (+ or -)
-        var totalSlots = (item.Width ?? 1) * (item.Height ?? 1);
+        var totalSlots = Math.Max(1, (item.Width ?? 1) * (item.Height ?? 1));
         if (totalSlots == 1)
         {
             var sign = profit >= 0 ? "+" : "";

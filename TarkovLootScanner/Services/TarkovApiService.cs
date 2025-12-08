@@ -155,7 +155,7 @@ public class TarkovApiService : ITarkovApiService
                             _logger.LogInformation($"API - Raw response preview: {rawJson.Substring(0, Math.Min(500, rawJson.Length))}");
 
                             var deserializationStart = DateTime.Now;
-                            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<CombinedDataResponse>>(_jsonOptions);
+                            var result = JsonSerializer.Deserialize<GraphQLResponse<CombinedDataResponse>>(rawJson, _jsonOptions);
                             deserializationTime = DateTime.Now - deserializationStart;
 
                             items = result?.Data?.Items ?? new List<TarkovItem>();
@@ -164,6 +164,12 @@ public class TarkovApiService : ITarkovApiService
                             // Ensure items and traders are never null for logging
                             items ??= new List<TarkovItem>();
                             traders ??= new List<TraderInfo>();
+
+                            // Update price entry slots for all items
+                            foreach (var item in items)
+                            {
+                                item.UpdatePriceEntrySlots();
+                            }
 
                             _logger.LogInformation($"API - Deserialized data - Items: {items.Count}, Traders: {traders.Count}");
 
@@ -233,7 +239,16 @@ public class TarkovApiService : ITarkovApiService
             return cachedData ?? new TarkovCacheData { Items = new List<TarkovItem>(), Traders = new List<TraderInfo>() };
         }
 
-        return cachedData;
+        // Ensure price entry slots are updated for existing cached data
+        if (cachedData?.Items != null)
+        {
+            foreach (var item in cachedData.Items)
+            {
+                item.UpdatePriceEntrySlots();
+            }
+        }
+
+        return cachedData!;
     }
 
     /// <summary>

@@ -134,14 +134,30 @@ public class FileCacheService : ICacheService
         // Also save to file
         var filePath = GetCacheFilePath(key);
         var json = JsonSerializer.Serialize(data, _jsonOptions);
-        await File.WriteAllTextAsync(filePath, json);
+        try
+        {
+            await File.WriteAllTextAsync(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to save data to file for cache key {key}", ex);
+            // Memory cache entry remains intact for continued operation
+        }
     }
 
     public async Task SaveDataToFileAsync<T>(string fileName, T data)
     {
         var filePath = Path.Combine(_cacheDirectory, fileName);
         var json = JsonSerializer.Serialize(data, _jsonOptions);
-        await File.WriteAllTextAsync(filePath, json);
+        try
+        {
+            await File.WriteAllTextAsync(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to save data to file {fileName}", ex);
+            // Operation continues, caller can handle failure if needed
+        }
     }
 
     public async Task<T?> LoadDataFromFileAsync<T>(string fileName)
@@ -159,7 +175,7 @@ public class FileCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error loading data from file {fileName}: {ex.Message}");
+            _logger.LogError($"Failed to load data from file {fileName}", ex);
             return default;
         }
     }
@@ -185,7 +201,7 @@ public class FileCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error downloading image from {url}: {ex.Message}");
+            _logger.LogError($"Failed to download image from {url}", ex);
             return null;
         }
     }
@@ -205,6 +221,8 @@ public class FileCacheService : ICacheService
             Directory.Delete(_cacheDirectory, true);
             Directory.CreateDirectory(_cacheDirectory);
         }
+
+        await Task.CompletedTask;
     }
 
     public async Task<(int fileCount, long totalSizeMb)> GetCacheStatisticsAsync()
@@ -216,6 +234,7 @@ public class FileCacheService : ICacheService
 
         var files = Directory.GetFiles(_cacheDirectory, "*", SearchOption.AllDirectories);
         var totalSize = files.Sum(f => new FileInfo(f).Length);
+        await Task.CompletedTask;
         return (files.Length, totalSize / (1024 * 1024));
     }
 

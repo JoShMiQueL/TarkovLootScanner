@@ -22,9 +22,9 @@ public class PriceEntry
     public string VendorName => Vendor?.Name ?? string.Empty;
 
     // Helper properties for display
-    public string FormattedPrice => TotalSlots == 1 ?
-        $"{PriceRUB:N0}₽" :
-        $"{PriceRUB:N0}₽ ({Math.Round((double)PriceRUB / TotalSlots, 0):N0}₽)";
+    public string FormattedPrice => TotalSlots > 1 ?
+        $"{PriceRUB:N0}₽ ({Math.Round((double)PriceRUB / TotalSlots, 0):N0}₽)" :
+        $"{PriceRUB:N0}₽";
 
     public int TotalSlots { get; set; } = 1; // Will be set by parent item
 }
