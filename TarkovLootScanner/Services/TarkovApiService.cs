@@ -81,7 +81,7 @@ public class TarkovApiService : ITarkovApiService
         var startTime = DateTime.Now;
         _logger.LogInformation("API - Starting initialization with single GraphQL query for all data");
 
-        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
         _logger.LogInformation($"CACHE - Cache data loaded in {(DateTime.Now - startTime).TotalMilliseconds}ms");
 
         // Check if we need to load data from API (null or empty cache)
@@ -179,7 +179,7 @@ public class TarkovApiService : ITarkovApiService
 
                         // Cache to file
                         var cacheSaveStart = DateTime.Now;
-                        await _cacheService.SaveDataToFileAsync("cache_data", cachedData);
+                        await _cacheService.SaveDataToFileAsync("cache_data.json", cachedData);
                         var cacheSaveTime = DateTime.Now - cacheSaveStart;
 
                         await _logger.LogAPICallAsync("GraphQL_AllData", apiCallTime, true);
@@ -216,13 +216,13 @@ public class TarkovApiService : ITarkovApiService
     /// </summary>
     public async Task<TarkovCacheData> GetAllCachedDataAsync()
     {
-        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
 
         // If cache doesn't exist or is empty, load from API first
         if (cachedData == null || (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0))
         {
             await LoadAllDataForCacheAsync();
-            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
 
             // Return loaded data or empty if still failed
             return cachedData ?? new TarkovCacheData { Items = new List<TarkovItem>(), Traders = new List<TraderInfo>() };
@@ -237,7 +237,7 @@ public class TarkovApiService : ITarkovApiService
     public async Task LoadTraderAvatarsAsync()
     {
         // Ensure cache is loaded
-        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
 
         if (cachedData?.Traders != null)
         {
@@ -260,7 +260,7 @@ public class TarkovApiService : ITarkovApiService
             await LoadAllDataForCacheAsync();
 
             // Retry with loaded data
-            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data.json");
             if (cachedData?.Traders != null)
             {
                 foreach (var trader in cachedData!.Traders)
