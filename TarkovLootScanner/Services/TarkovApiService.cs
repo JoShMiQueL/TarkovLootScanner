@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,39 +6,37 @@ using TarkovLootScanner.Models;
 namespace TarkovLootScanner.Services;
 
 /// <summary>
-/// Service for interacting with the Tarkov.dev GraphQL API with caching
+/// Service for Tarkov data retrieval from local cache with API fallback
 /// </summary>
-public class TarkovApiService
+public class TarkovApiService : ITarkovApiService
 {
-    private readonly HttpClient _httpClient;
+    private readonly ICacheService _cacheService;
+    private readonly ILoggerService _logger;
+    private readonly HttpClient? _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
-    private readonly ConcurrentDictionary<string, CacheEntry<TarkovItem>> _itemCache;
-    private readonly ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>> _itemsCache;
-    private readonly ConcurrentDictionary<string, string> _traderAvatarCache;
-    private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(15);
-    private readonly object _cacheLock = new();
 
-    private class CacheEntry<T>
+    public TarkovApiService(ICacheService cacheService, ILoggerService logger)
     {
-        public T Data { get; set; }
-        public DateTime Timestamp { get; set; }
+        _cacheService = cacheService;
+        _logger = logger;
 
-        public CacheEntry(T data)
+        _logger.LogInformation("Initializing TarkovApiService");
+
+        // Initialize HTTP client for API fallback (keeping minimal for emergency API calls)
+        try
         {
-            Data = data;
-            Timestamp = DateTime.UtcNow;
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri("https://api.tarkov.dev/")
+            };
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "TarkovLootScanner/1.0");
+            _logger.LogInformation("HTTP client initialized for API fallback");
         }
-
-        public bool IsExpired() => DateTime.UtcNow - Timestamp > TimeSpan.FromMinutes(15);
-    }
-
-    public TarkovApiService()
-    {
-        _httpClient = new HttpClient
+        catch (Exception ex)
         {
-            BaseAddress = new Uri("https://api.tarkov.dev/")
-        };
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "TarkovLootScanner/1.0");
+            _httpClient = null;
+            _logger.LogError("Failed to initialize HTTP client", ex);
+        }
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -47,24 +44,57 @@ public class TarkovApiService
             PropertyNameCaseInsensitive = true
         };
 
-        _itemCache = new ConcurrentDictionary<string, CacheEntry<TarkovItem>>();
-        _itemsCache = new ConcurrentDictionary<string, CacheEntry<List<TarkovItem>>>();
-        _traderAvatarCache = new ConcurrentDictionary<string, string>();
+        _logger.LogInformation("TarkovApiService initialization completed");
     }
 
+
+
     /// <summary>
-    /// Fetches item data by ID with caching
+    /// Gets item data by ID from cache
     /// </summary>
     public async Task<TarkovItem?> GetItemByIdAsync(string itemId)
     {
-        // Check cache first
-        if (_itemCache.TryGetValue(itemId, out var cacheEntry) && !cacheEntry.IsExpired())
-        {
-            return cacheEntry.Data;
-        }
+        var cachedData = await GetAllCachedDataAsync();
+        return cachedData?.Items?.FirstOrDefault(i => i.Id == itemId);
+    }
 
-        var query = @"{
-  item(id: """ + itemId + @""") {
+    /// <summary>
+    /// Gets item data by name from cache (searches for items containing the name)
+    /// </summary>
+    public async Task<List<TarkovItem>> GetItemsByNameAsync(string itemName)
+    {
+        var cachedData = await GetAllCachedDataAsync();
+        if (cachedData?.Items == null)
+            return new List<TarkovItem>();
+
+        return cachedData.Items
+            .Where(i => !string.IsNullOrEmpty(i.Name) &&
+                       i.Name.Contains(itemName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Loads all data for caching with single GraphQL query
+    /// </summary>
+    public async Task LoadAllDataForCacheAsync()
+    {
+        var startTime = DateTime.Now;
+        _logger.LogInformation("API - Starting initialization with single GraphQL query for all data");
+
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+        _logger.LogInformation($"CACHE - Cache data loaded in {(DateTime.Now - startTime).TotalMilliseconds}ms");
+
+        // Check if we need to load data from API (null or empty cache)
+        bool needsApiLoad = cachedData == null ||
+                          (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0);
+
+        if (needsApiLoad)
+        {
+            if (_httpClient != null)
+            {
+                // Single GraphQL query for all data (fixed for tarkov.dev schema)
+                var query = @"{
+  items {
     id
     name
     shortName
@@ -94,194 +124,179 @@ public class TarkovApiService
       }
     }
   }
-}";
-
-        var request = new
-        {
-            query
-        };
-
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("graphql", request);
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<ItemResponse>>(_jsonOptions);
-            var item = result?.Data?.Item;
-
-            // Cache the result if successful
-            if (item != null)
-            {
-                _itemCache[itemId] = new CacheEntry<TarkovItem>(item);
-            }
-
-            return item;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Error fetching item by ID: {ex.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Fetches item data by name (searches for items containing the name) with caching
-    /// </summary>
-    public async Task<List<TarkovItem>> GetItemsByNameAsync(string itemName)
-    {
-        // Check cache first
-        if (_itemsCache.TryGetValue(itemName, out var cacheEntry) && !cacheEntry.IsExpired())
-        {
-            return cacheEntry.Data;
-        }
-
-        var query = @"{
-  items(name: """ + itemName + @""") {
-    id
-    name
-    shortName
-    basePrice
-    lastLowPrice
-    avg24hPrice
-    changeLast48hPercent
-    fleaMarketFee
-    iconLink
-    width
-    height
-    sellFor {
-      price
-      currency
-      priceRUB
-      vendor {
-        name
-      }
-    }
-    buyFor {
-      price
-      currency
-      priceRUB
-      vendor {
-        name
-      }
-    }
-  }
-}";
-
-        var request = new
-        {
-            query
-        };
-
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("graphql", request);
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<ItemsResponse>>(_jsonOptions);
-            var items = result?.Data?.Items ?? new List<TarkovItem>();
-
-            // Cache the result if successful
-            _itemsCache[itemName] = new CacheEntry<List<TarkovItem>>(items);
-
-            return items;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Error fetching items by name: {ex.Message}");
-            return new List<TarkovItem>();
-        }
-    }
-
-    /// <summary>
-    /// Fetches trader data for avatar URLs and caches them
-    /// </summary>
-    public async Task LoadTraderAvatarsAsync()
-    {
-        // Only load if cache is empty
-        if (_traderAvatarCache.Any())
-            return;
-
-        var query = @"{
   traders {
     name
     imageLink
   }
 }";
 
-        var request = new { query };
+                var request = new { query };
 
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("graphql", request);
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<TradersResponse>>(_jsonOptions);
-            var traders = result?.Data?.Traders;
-
-            if (traders != null)
-            {
-                foreach (var trader in traders)
+                var apiCallStart = DateTime.Now;
+                try
                 {
-                    if (!string.IsNullOrEmpty(trader.Name) && !string.IsNullOrEmpty(trader.ImageLink))
+                    _logger.LogInformation("API - Making GraphQL call to load all data");
+
+                    var response = await _httpClient.PostAsJsonAsync("graphql", request);
+                    var apiCallTime = DateTime.Now - apiCallStart;
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        _traderAvatarCache[trader.Name] = trader.ImageLink;
+                        // Debug: Read raw response first
+                        var rawJson = await response.Content.ReadAsStringAsync();
+                        _logger.LogInformation($"API - Raw GraphQL response length: {rawJson.Length} chars");
+
+                        var items = new List<TarkovItem>();
+                        var traders = new List<TraderInfo>();
+                        TimeSpan deserializationTime = TimeSpan.Zero;
+
+                        if (!string.IsNullOrEmpty(rawJson))
+                        {
+                            _logger.LogInformation($"API - Raw response preview: {rawJson.Substring(0, Math.Min(500, rawJson.Length))}");
+
+                            var deserializationStart = DateTime.Now;
+                            var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<CombinedDataResponse>>(_jsonOptions);
+                            deserializationTime = DateTime.Now - deserializationStart;
+
+                            items = result?.Data?.Items ?? new List<TarkovItem>();
+                            traders = result?.Data?.Traders ?? new List<TraderInfo>();
+
+                            // Ensure items and traders are never null for logging
+                            items ??= new List<TarkovItem>();
+                            traders ??= new List<TraderInfo>();
+
+                            _logger.LogInformation($"API - Deserialized data - Items: {items.Count}, Traders: {traders.Count}");
+
+                            cachedData = new TarkovCacheData { Items = items, Traders = traders };
+
+                            _logger.LogInformation($"API - Received {items.Count} items and {traders.Count} traders");
+                        }
+                        else
+                        {
+                            _logger.LogError("API - Empty response from GraphQL");
+                            cachedData = new TarkovCacheData { Items = new List<TarkovItem>(), Traders = new List<TraderInfo>() };
+                        }
+
+                        // Cache to file
+                        var cacheSaveStart = DateTime.Now;
+                        await _cacheService.SaveDataToFileAsync("cache_data", cachedData);
+                        var cacheSaveTime = DateTime.Now - cacheSaveStart;
+
+                        await _logger.LogAPICallAsync("GraphQL_AllData", apiCallTime, true);
+                        await _logger.LogPerformanceAsync("JSON_Deserialization", deserializationTime, $"Items: {items.Count}, Traders: {traders.Count}");
+                        await _logger.LogPerformanceAsync("File_Cache_Save", cacheSaveTime, "cache_data.json");
+                        await _logger.LogPerformanceAsync("Total_LoadAllData", DateTime.Now - startTime, "Initialization completed");
+                    }
+                    else
+                    {
+                        await _logger.LogAPICallAsync("GraphQL_AllData", apiCallTime, false, $"Status: {response.StatusCode}");
+                        _logger.LogError($"API call failed with status: {response.StatusCode}");
                     }
                 }
+                catch (Exception ex)
+                {
+                    await _logger.LogAPICallAsync("GraphQL_AllData", DateTime.Now - apiCallStart, false, ex.Message);
+                    _logger.LogError("Error loading all data from API", ex);
+                }
+            }
+            else
+            {
+                _logger.LogError("Cannot load data - HTTP client not available");
             }
         }
-        catch (Exception ex)
+        else
         {
-            System.Diagnostics.Debug.WriteLine($"Error fetching trader avatars: {ex.Message}");
+            _logger.LogInformation($"CACHE - Using existing cache data with {cachedData!.Items?.Count ?? 0} items and {cachedData!.Traders?.Count ?? 0} traders");
+            await _logger.LogPerformanceAsync("Cache_Load", DateTime.Now - startTime, "Existing data loaded");
         }
     }
 
     /// <summary>
-    /// Gets the trader avatar URL from cache, loading traders if necessary
+    /// Gets all cached Tarkov data
+    /// </summary>
+    public async Task<TarkovCacheData> GetAllCachedDataAsync()
+    {
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+
+        // If cache doesn't exist or is empty, load from API first
+        if (cachedData == null || (cachedData.Items?.Count == 0 && cachedData.Traders?.Count == 0))
+        {
+            await LoadAllDataForCacheAsync();
+            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+
+            // Return loaded data or empty if still failed
+            return cachedData ?? new TarkovCacheData { Items = new List<TarkovItem>(), Traders = new List<TraderInfo>() };
+        }
+
+        return cachedData;
+    }
+
+    /// <summary>
+    /// Fetches trader data for avatar URLs from cached data
+    /// </summary>
+    public async Task LoadTraderAvatarsAsync()
+    {
+        // Ensure cache is loaded
+        var cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+
+        if (cachedData?.Traders != null)
+        {
+            // Cache trader avatar images
+            foreach (var trader in cachedData!.Traders)
+            {
+                if (!string.IsNullOrEmpty(trader.ImageLink) && !string.IsNullOrEmpty(trader.Id))
+                {
+                    var cachedPath = _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
+                    if (cachedPath == null)
+                    {
+                        await _cacheService.DownloadAndCacheImageAsync(trader.ImageLink, "traders", $"{trader.Id}.png");
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Fallback: load if no cached data
+            await LoadAllDataForCacheAsync();
+
+            // Retry with loaded data
+            cachedData = await _cacheService.LoadDataFromFileAsync<TarkovCacheData>("cache_data");
+            if (cachedData?.Traders != null)
+            {
+                foreach (var trader in cachedData!.Traders)
+                {
+                    if (!string.IsNullOrEmpty(trader.ImageLink) && !string.IsNullOrEmpty(trader.Id))
+                    {
+                        var cachedPath = _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
+                        if (cachedPath == null)
+                        {
+                            await _cacheService.DownloadAndCacheImageAsync(trader.ImageLink, "traders", $"{trader.Id}.png");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the trader avatar path from cache, loading traders if necessary
     /// </summary>
     public async Task<string?> GetTraderAvatarUrlAsync(string traderName)
     {
         // Ensure traders are loaded
         await LoadTraderAvatarsAsync();
 
-        // Try exact match first
-        if (_traderAvatarCache.TryGetValue(traderName, out var avatarUrl))
-        {
-            return avatarUrl;
-        }
+        // Find trader by name to get ID
+        var cachedData = await GetAllCachedDataAsync();
+        var trader = cachedData?.Traders?.FirstOrDefault(t => t.Name == traderName);
 
-        // Try partial matches
-        foreach (var kvp in _traderAvatarCache)
+        if (trader?.Id != null)
         {
-            if (traderName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
-            {
-                return kvp.Value;
-            }
+            // Get cached local image path using trader ID
+            return _cacheService.GetCachedImagePath("traders", $"{trader.Id}.png");
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Clears expired cache entries to free memory
-    /// </summary>
-    public void ClearExpiredCache()
-    {
-        lock (_cacheLock)
-        {
-            // Remove expired entries from item cache
-            var expiredItemKeys = _itemCache.Where(kvp => kvp.Value.IsExpired()).Select(kvp => kvp.Key).ToList();
-            foreach (var key in expiredItemKeys)
-            {
-                _itemCache.TryRemove(key, out _);
-            }
-
-            // Remove expired entries from items cache
-            var expiredItemsKeys = _itemsCache.Where(kvp => kvp.Value.IsExpired()).Select(kvp => kvp.Key).ToList();
-            foreach (var key in expiredItemsKeys)
-            {
-                _itemsCache.TryRemove(key, out _);
-            }
-        }
     }
 
     /// <summary>
@@ -289,11 +304,7 @@ public class TarkovApiService
     /// </summary>
     public void ClearAllCache()
     {
-        lock (_cacheLock)
-        {
-            _itemCache.Clear();
-            _itemsCache.Clear();
-        }
+        _ = _cacheService.ClearAllCacheAsync();
     }
 
     /// <summary>
@@ -301,63 +312,7 @@ public class TarkovApiService
     /// </summary>
     public (int totalItemsCached, int totalListsCached) GetCacheStatistics()
     {
-        return (_itemCache.Count, _itemsCache.Count);
-    }
-
-    /// <summary>
-    /// Gets the best trader price for an item (highest sellTo trader price)
-    /// </summary>
-    public static (string traderName, PriceEntry? priceEntry) GetBestTraderPrice(TarkovItem item)
-    {
-        if (item.SellFor == null || !item.SellFor.Any())
-            return ("N/A", null);
-
-        // Get the highest trader price (excluding flea market)
-        var bestTraderEntry = item.SellFor
-            .Where(p => p.Vendor.Name != "Flea Market")
-            .OrderByDescending(p => p.PriceRUB)
-            .FirstOrDefault();
-
-        return bestTraderEntry != null ? (bestTraderEntry.Vendor.Name, bestTraderEntry) : ("N/A", null);
-    }
-
-    /// <summary>
-    /// Calculates the profit between flea and trader prices, accounting for flea market fees
-    /// </summary>
-    public static (int? profit, string description) CalculateProfit(TarkovItem item)
-    {
-        if (item.LastLowPrice == null || item.SellFor == null || !item.SellFor.Any())
-            return (null, "Not enough data");
-
-        // Find the best trader sell price (highest price traders pay for the item)
-        var bestTraderEntry = item.SellFor
-            .Where(p => p.Vendor.Name != "Flea Market")
-            .OrderByDescending(p => p.PriceRUB)
-            .FirstOrDefault();
-
-        if (bestTraderEntry == null)
-            return (null, "No trader data");
-
-        // Calculate profit: (flea market received amount after fees) - (trader sell price)
-        // In Tarkov, flea market charges fees, so players receive lastLowPrice - fleaMarketFee
-        var fleaMarketReceived = item.LastLowPrice.Value;
-        if (item.FleaMarketFee.HasValue)
-        {
-            fleaMarketReceived = item.LastLowPrice.Value - item.FleaMarketFee.Value;
-        }
-
-        var profit = fleaMarketReceived - bestTraderEntry.PriceRUB;
-
-        // Format profit - no per-slot breakdown for single-slot items
-        var totalSlots = item.TotalSlots;
-        if (totalSlots == 1)
-        {
-            return (profit, $"{profit:N0}₽");
-        }
-        else
-        {
-            var profitPerSlot = Math.Round((double)profit / totalSlots, 0);
-            return (profit, $"{profit:N0}₽ ({profitPerSlot:N0}₽)");
-        }
+        // Note: This is a simplified version. Real implementation would track counts
+        return (0, 0);
     }
 }

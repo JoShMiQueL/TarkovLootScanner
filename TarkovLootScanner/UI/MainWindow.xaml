@@ -148,15 +148,33 @@
             <!-- MAIN CONTENT -->
             <Grid Grid.Row="1"
                   Background="{DynamicResource ApplicationBackgroundBrush}">
-                <!-- Temporary button to open overlay -->
-                <Button Content="Open Overlay"
-                        x:Name="OpenOverlayButton"
-                        Width="110"
-                        Height="28"
-                        Margin="8"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Click="OpenOverlayButton_Click"/>
+                <!-- Debug controls for opening overlay -->
+                <StackPanel Orientation="Horizontal"
+                            Margin="8"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top">
+                    <TextBox x:Name="ItemNameTextBox"
+                             Width="200"
+                             Height="28"
+                             Margin="0,0,8,0"
+                             VerticalContentAlignment="Center"
+                             Text="Salewa"
+                             Foreground="White"
+                             Background="{DynamicResource ApplicationBackgroundBrush}"
+                             BorderBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                             KeyDown="ItemNameTextBox_KeyDown">
+                        <TextBox.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="2"/>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Button Content="Open Overlay"
+                            x:Name="OpenOverlayButton"
+                            Width="110"
+                            Height="28"
+                            Click="OpenOverlayButton_Click"/>
+                </StackPanel>
 
                 <!-- Status text at bottom-right -->
                 <TextBlock x:Name="StatusText"

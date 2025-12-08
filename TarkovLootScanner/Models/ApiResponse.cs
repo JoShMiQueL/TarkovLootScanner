@@ -10,19 +10,12 @@ public class GraphQLResponse<T>
 }
 
 /// <summary>
-/// Wrapper for items query response
+/// Combined response for single GraphQL query with items and traders
 /// </summary>
-public class ItemsResponse
+public class CombinedDataResponse
 {
     public List<TarkovItem> Items { get; set; } = new List<TarkovItem>();
-}
-
-/// <summary>
-/// Wrapper for single item query response
-/// </summary>
-public class ItemResponse
-{
-    public TarkovItem Item { get; set; } = new TarkovItem();
+    public List<TraderInfo> Traders { get; set; } = new List<TraderInfo>();
 }
 
 /// <summary>
@@ -30,14 +23,19 @@ public class ItemResponse
 /// </summary>
 public class TraderInfo
 {
+    // API doesn't provide ID, using Name as unique identifier
     public string Name { get; set; } = string.Empty;
     public string ImageLink { get; set; } = string.Empty;
+
+    // Computed property for backward compatibility (Name sanitized for filename)
+    public string Id => Name.Replace(" ", "_").Replace("'", "").ToLowerInvariant();
 }
 
 /// <summary>
-/// Wrapper for traders query response
+/// Data structure for caching all Tarkov data locally
 /// </summary>
-public class TradersResponse
+public class TarkovCacheData
 {
+    public List<TarkovItem> Items { get; set; } = new List<TarkovItem>();
     public List<TraderInfo> Traders { get; set; } = new List<TraderInfo>();
 }
