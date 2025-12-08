@@ -150,6 +150,7 @@
                   Background="{DynamicResource ApplicationBackgroundBrush}">
                 <!-- Temporary button to open overlay -->
                 <Button Content="Open Overlay"
+                        x:Name="OpenOverlayButton"
                         Width="110"
                         Height="28"
                         Margin="8"
