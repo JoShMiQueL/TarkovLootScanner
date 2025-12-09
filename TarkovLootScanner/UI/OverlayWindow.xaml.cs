@@ -55,6 +55,136 @@ public partial class OverlayWindow : Window, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    private void InitializePriceChart()
+    {
+        if (CurrentItem?.HistoricalPrices == null || CurrentItem.HistoricalPrices.Count == 0)
+        {
+            PriceChart.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        try
+        {
+            // Parse historical prices data - timestamps are Unix milliseconds
+            var historicalData = CurrentItem.HistoricalPrices
+                .Where(h => !string.IsNullOrEmpty(h.Timestamp) && long.TryParse(h.Timestamp, out _))
+                .Select(h =>
+                {
+                    if (long.TryParse(h.Timestamp, out long unixTimestampMs))
+                    {
+                        var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                        return new { HistoricalPrice = h, DateTime = epoch.AddMilliseconds(unixTimestampMs) };
+                    }
+                    return null;
+                })
+                .Where(x => x != null)
+                .OrderBy(x => x!.DateTime)
+                .Select(x => x!.HistoricalPrice)
+                .ToList();
+
+            if (historicalData.Count < 2)
+            {
+                PriceChart.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // Extract dates and prices - timestamps are Unix timestamps in milliseconds
+            var dates = historicalData.Select(h =>
+            {
+                if (long.TryParse(h.Timestamp, out long unixTimestampMs))
+                {
+                    // Convert Unix timestamp in milliseconds to DateTime
+                    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                    return epoch.AddMilliseconds(unixTimestampMs);
+                }
+                return DateTime.MinValue;
+            }).Where(d => d != DateTime.MinValue).ToArray();
+
+            var prices = historicalData.Take(dates.Length).Select(h => (double)h.Price).ToArray();
+
+            // Clear any existing plots
+            PriceChart.Plot.Clear();
+
+            // Create a line plot with white color - use OLE Automation dates for X axis
+            var timestamps = dates.Select(d => d.ToOADate()).ToArray();
+            var scatter = PriceChart.Plot.Add.Scatter(timestamps, prices);
+            scatter.Color = ScottPlot.Colors.White;
+            scatter.LineWidth = 2;
+
+            // Make background transparent
+            PriceChart.Plot.FigureBackground.Color = ScottPlot.Colors.Transparent;
+            PriceChart.Plot.DataBackground.Color = ScottPlot.Colors.Transparent;
+
+            // Hide grid lines for cleaner look
+            PriceChart.Plot.Grid.IsVisible = false;
+
+            // Set bottom and left axes lines to white, hide top and right
+            PriceChart.Plot.Axes.Bottom.FrameLineStyle.Color = ScottPlot.Colors.White;
+            PriceChart.Plot.Axes.Left.FrameLineStyle.Color = ScottPlot.Colors.White;
+            PriceChart.Plot.Axes.Top.FrameLineStyle.IsVisible = false;
+            PriceChart.Plot.Axes.Right.FrameLineStyle.IsVisible = false;
+
+            // Set label colors to white
+            PriceChart.Plot.Axes.Bottom.TickLabelStyle.ForeColor = ScottPlot.Colors.White;
+            PriceChart.Plot.Axes.Left.TickLabelStyle.ForeColor = ScottPlot.Colors.White;
+
+            // Remove Y axis labels and title for cleaner look
+            PriceChart.Plot.YLabel("");
+            PriceChart.Plot.Title("");
+
+            // Add custom X-axis labels showing time ago (hours or days)
+            var now = DateTime.UtcNow;
+            var tickPositions = new List<double>();
+            var tickLabels = new List<string>();
+
+            // Determine if we should show hours or days based on the time span
+            var oldestDate = dates.Min();
+            var newestDate = dates.Max();
+            var totalSpan = newestDate - oldestDate;
+            var useHours = totalSpan.TotalHours <= 48; // Show hours if data spans 48 hours or less
+
+            // Create ticks for each data point, showing time ago from right to left
+            for (int i = dates.Length - 1; i >= 0; i--)
+            {
+                var timeSpan = now - dates[i];
+                string label;
+
+                if (useHours)
+                {
+                    var hoursAgo = (int)timeSpan.TotalHours;
+                    label = hoursAgo == 0 ? "0h" : $"{hoursAgo}h";
+                }
+                else
+                {
+                    var daysAgo = (int)timeSpan.TotalDays;
+                    label = $"{daysAgo}d";
+                }
+
+                tickPositions.Add(timestamps[i]);
+                tickLabels.Add(label);
+            }
+
+            // Set custom tick positions and labels
+            PriceChart.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(tickPositions.ToArray(), tickLabels.ToArray());
+            PriceChart.Plot.Axes.Bottom.TickLabelStyle.FontSize = 8;
+
+            // Disable chart interactions at WPF level
+            PriceChart.IsHitTestVisible = false;
+
+            // Auto-scale and refresh
+            PriceChart.Plot.Axes.AutoScale();
+            PriceChart.Refresh();
+
+            PriceChart.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
+            logger.LogError("Error initializing price chart with historical data", ex);
+            PriceChart.Visibility = Visibility.Collapsed;
+        }
+    }
+
     private async void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
     {
         var logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
@@ -267,6 +397,10 @@ public partial class OverlayWindow : Window, INotifyPropertyChanged
                 ProfitResultText.Text = "No profit data";
             }
         }
+
+        // Price chart disabled for now - future feature
+        InitializePriceChart();
+        PriceChart.Visibility = Visibility.Collapsed;
     }
 
     private async Task LoadTraderAvatarAsync(string traderName)
